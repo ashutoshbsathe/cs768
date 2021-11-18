@@ -6,28 +6,29 @@ import torch_geometric.nn as nn_geo
 import pytorch_lightning as pl
 
 name_to_conv_operator = {
-    'GAT': nn.GAT,
-    'GCN': nn.GCN,
-    'GraphSAGE': nn.GraphSAGE,
+    'GAT': nn_geo.GAT,
+    'GCN': nn_geo.GCN,
+    'GraphSAGE': nn_geo.GraphSAGE,
 }
 
 name_to_pooling_operator = {
-    'add': nn_geo.global_add_pooling,
-    'mean': nn_geo.global_mean_pooling,
-    'max': nn_geo.global_max_pooling,
+    'add': nn_geo.global_add_pool,
+    'mean': nn_geo.global_mean_pool,
+    'max': nn_geo.global_max_pool,
 }
 
 class GraphClassification(pl.LightningModule):
-    def __init__(**kwargs):
-        self.conv = name_to_conv_operator[conv_operator](
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.conv = name_to_conv_operator[kwargs['conv_operator']](
             in_channels=1, # dataset has only 1D features
-            hidden_channels=hidden_channels,
-            out_channels=out_channels,
-            num_layers=num_layers,
-            dropout=dropout,
+            hidden_channels=kwargs['hidden_channels'],
+            out_channels=kwargs['out_channels'],
+            num_layers=kwargs['num_layers'],
+            dropout=kwargs['dropout'],
         )
-        self.pool = name_to_pooling_operator[pool_operator]
-        output_dim = hidden_channels if out_channels is None else out_channels
+        self.pool = name_to_pooling_operator[kwargs['pool_operator']]
+        output_dim = kwargs['hidden_channels'] if kwargs['out_channels'] is None else kwargs['out_channels']
         self.linear = nn.Linear(output_dim, 10)
         self.save_hyperparameters()
 
