@@ -31,6 +31,7 @@ class GraphClassification(pl.LightningModule):
         output_dim = kwargs['hidden_channels'] if kwargs['out_channels'] is None else kwargs['out_channels']
         self.linear = nn.Linear(output_dim, 10)
         self.save_hyperparameters()
+        print(self.hparams)
 
     def forward(self, batch):
         # batch is a `torch_geometric.data.Batch` operator 
@@ -76,4 +77,4 @@ class GraphClassification(pl.LightningModule):
             threshold=0.0001,
             min_lr=1e-8
         )
-        return optim, lr_sched
+        return {'optimizer': optim, 'lr_scheduler': lr_sched, 'monitor': 'val_loss'}

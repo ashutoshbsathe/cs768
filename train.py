@@ -8,7 +8,9 @@ model = GraphClassification(
     out_channels=None,
     num_layers=1,
     dropout=0,
-    pool_operator='mean'
+    pool_operator='mean',
+    lr=1e-2,
+    weight_decay=0
 )
 mnistsuperpixels = MNISTSuperpixelsDataModule()
 
