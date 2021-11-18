@@ -4,7 +4,11 @@ from PIL import ImageColor
 import networkx as nx
 from matplotlib import pyplot as plt
 
+import torch 
+import torch.nn as nn 
 from torchvision.datasets import MNIST
+from torch_geometric.nn import GCN, GraphSAGE, GAT, global_max_pool
+from torch_geometric.data import Batch
 from torch_geometric.datasets import MNISTSuperpixels 
 
 def visualize(image, graph):
@@ -42,11 +46,20 @@ def visualize(image, graph):
 
     plt.savefig('./visualization.pdf', dpi=300, bbox_inches='tight')
 
-mnist_dataset = MNIST('./MNIST', train=True)
+#mnist_dataset = MNIST('./MNIST', train=True)
 graph_dataset = MNISTSuperpixels(root='./MNISTSuperpixels', train=True)
 
 idx = 10240
-image, label = mnist_dataset[idx]
+#image, label = mnist_dataset[idx]
 graph = graph_dataset[idx]
-print(f'Image label={label}')
-visualize(image, graph)
+
+gcn = GCN(in_channels=1, hidden_channels=128, num_layers=128)
+
+print(graph)
+batch = Batch.from_data_list([graph_dataset[0], graph_dataset[1], graph_dataset[2], graph_dataset[3]])
+y = gcn(batch.x, batch.edge_index)
+print(y.size())
+y = global_max_pool(y, batch.batch)
+print(y.size())
+#print(f'Image label={label}')
+#visualize(image, graph)
