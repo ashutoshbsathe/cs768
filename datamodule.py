@@ -10,7 +10,7 @@ class MNISTSuperpixelsDataModule(pl.LightningDataModule):
         self.train_split = train_split
         self.batch_size = batch_size
 
-    def setup(self, mode):
+    def setup(self, stage=None):
         train = datasets.MNISTSuperpixels(root=self.data_dir, train=True)
         test = datasets.MNISTSuperpixels(root=self.data_dir, train=False)
         self.mnist_superpixels_train, self.mnist_superpixels_val = random_split(
