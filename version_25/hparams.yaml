@@ -1,0 +1,8 @@
+conv_operator: GAT
+dropout: 0
+hidden_channels: 64
+lr: 0.005
+num_layers: 4
+out_channels: null
+pool_operator: mean
+weight_decay: 1.0e-05

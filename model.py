@@ -21,7 +21,7 @@ class GraphClassification(pl.LightningModule):
     def __init__(self, **kwargs):
         super().__init__()
         self.conv = name_to_conv_operator[kwargs['conv_operator']](
-            in_channels=1, # TODO: parameterize with node2vec dim
+            in_channels=3, # TODO: parameterize with node2vec dim
             hidden_channels=kwargs['hidden_channels'],
             out_channels=kwargs['out_channels'],
             num_layers=kwargs['num_layers'],
@@ -31,8 +31,7 @@ class GraphClassification(pl.LightningModule):
         self.pool = name_to_pooling_operator[kwargs['pool_operator']]
         output_dim = kwargs['hidden_channels'] if kwargs['out_channels'] is None else kwargs['out_channels']
         self.classifier = nn.Sequential(
-            nn.BatchNorm1d(output_dim*75),
-            nn.Linear(output_dim*75, 128),
+            nn.Linear(output_dim, 128),
             nn.LeakyReLU(),
             nn.Dropout(0.4),
             nn.Linear(128, 64),
@@ -47,8 +46,9 @@ class GraphClassification(pl.LightningModule):
     def forward(self, batch):
         # batch is a `torch_geometric.data.Batch` operator
         # batch.x = nn_geo.Node2Vec(batch.edge_index, embedding_dim=8, walk_length=32, context_size=8).forward().to(self.device) # TODO: Can you get current device in PyTorch ?
-        embeds = self.conv(batch.x, batch.edge_index).view(batch.batch.max()+1, -1)
-        logits = self.classifier(embeds)
+        embeds = self.conv(batch.x, batch.edge_index)
+        pooled = self.pool(embeds, batch.batch)
+        logits = self.classifier(pooled)
         return logits 
 
     def training_step(self, batch, batch_idx):
