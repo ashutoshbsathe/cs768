@@ -1,19 +1,33 @@
+from argparse import ArgumentParser
 from model import GraphClassification
 from datamodule import MNISTSuperpixelsDataModule
 import pytorch_lightning as pl
 
-model = GraphClassification(
-    conv_operator='GAT',
-    hidden_channels=64,
-    out_channels=None,
-    num_layers=4,
-    dropout=0,
-    pool_operator='mean',
-    lr=5e-3,
-    weight_decay=1e-5
-)
+pl.seed_everything(1618, workers=True)
+
+parser = ArgumentParser()
+parser = GraphClassification.add_model_specific_args(parser)
+args = parser.parse_args()
+print(vars(args))
+exit()
+model = GraphClassification(**vars(args))
 mnistsuperpixels = MNISTSuperpixelsDataModule(batch_size=64)
 
-trainer = pl.Trainer(gpus=1, max_epochs=100, track_grad_norm=2)
+expt_name = f'conv={args.conv_operator}_hidden={args.hidden_channels}_out={args.out_channels}_L={args.num_layers}_H={args.num_attention_heads}_pool={args.pool_operator}'
+
+trainer = pl.Trainer(
+    gpus=1, 
+    max_epochs=100, 
+    track_grad_norm=2,
+    callbacks=[
+        pl.callbacks.ModelCheckpoint(
+            dirpath='./models/' + expt_name,
+            monitor='val_acc', mode='max',
+        )
+    ],
+    logger=pl.TensorBoardLogger(
+        save_dir='./models/' + expt_name,
+    )
+)
 trainer.fit(model, mnistsuperpixels)
 trainer.test(test_dataloaders=mnistsuperpixels.test_dataloader())
