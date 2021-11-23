@@ -43,6 +43,7 @@ class GraphClassification(pl.LightningModule):
             nn.Linear(64, 10)
         )
         self.loss = nn.CrossEntropyLoss()
+        self.save_hyperparameters()
         print(self.hparams)
 
     def forward(self, batch):

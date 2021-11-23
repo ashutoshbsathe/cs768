@@ -8,8 +8,6 @@ pl.seed_everything(1618, workers=True)
 parser = ArgumentParser()
 parser = GraphClassification.add_model_specific_args(parser)
 args = parser.parse_args()
-print(vars(args))
-exit()
 model = GraphClassification(**vars(args))
 mnistsuperpixels = MNISTSuperpixelsDataModule(batch_size=64)
 
@@ -25,7 +23,7 @@ trainer = pl.Trainer(
             monitor='val_acc', mode='max',
         )
     ],
-    logger=pl.TensorBoardLogger(
+    logger=pl.loggers.TensorBoardLogger(
         save_dir='./models/' + expt_name,
     )
 )

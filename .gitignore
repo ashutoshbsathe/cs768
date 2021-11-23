@@ -4,3 +4,4 @@ raw/*
 MNIST/*
 MNISTSuperpixels/*
 lightning_logs/
+models/
