@@ -4,15 +4,16 @@ import pytorch_lightning as pl
 
 model = GraphClassification(
     conv_operator='GCN',
-    hidden_channels=128,
+    hidden_channels=64,
     out_channels=None,
-    num_layers=1,
+    num_layers=8,
     dropout=0,
     pool_operator='mean',
-    lr=1e-2,
-    weight_decay=0
+    lr=5e-3,
+    weight_decay=1e-5
 )
-mnistsuperpixels = MNISTSuperpixelsDataModule()
+mnistsuperpixels = MNISTSuperpixelsDataModule(batch_size=64)
 
-trainer = pl.Trainer()
+trainer = pl.Trainer(gpus=1, max_epochs=100, track_grad_norm=2)
 trainer.fit(model, mnistsuperpixels)
+trainer.test(model, mnistsuperpixels.test_dataloader())

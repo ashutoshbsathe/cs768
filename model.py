@@ -21,60 +21,69 @@ class GraphClassification(pl.LightningModule):
     def __init__(self, **kwargs):
         super().__init__()
         self.conv = name_to_conv_operator[kwargs['conv_operator']](
-            in_channels=1, # dataset has only 1D features
+            in_channels=1, # TODO: parameterize with node2vec dim
             hidden_channels=kwargs['hidden_channels'],
             out_channels=kwargs['out_channels'],
             num_layers=kwargs['num_layers'],
             dropout=kwargs['dropout'],
+            norm=nn.BatchNorm1d(kwargs['hidden_channels']),
         )
         self.pool = name_to_pooling_operator[kwargs['pool_operator']]
         output_dim = kwargs['hidden_channels'] if kwargs['out_channels'] is None else kwargs['out_channels']
-        self.linear = nn.Linear(output_dim, 10)
+        self.classifier = nn.Sequential(
+            nn.BatchNorm1d(output_dim*75),
+            nn.Linear(output_dim*75, 128),
+            nn.LeakyReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(128, 64),
+            nn.LeakyReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(64, 10)
+        )
         self.save_hyperparameters()
+        self.loss = nn.CrossEntropyLoss()
         print(self.hparams)
 
     def forward(self, batch):
-        # batch is a `torch_geometric.data.Batch` operator 
-        embeds = self.conv(batch.x, batch.edge_index)
-        pooled = self.pool(embeds, batch.batch)
-        logits = self.linear(pooled)
-        return logits
+        # batch is a `torch_geometric.data.Batch` operator
+        # batch.x = nn_geo.Node2Vec(batch.edge_index, embedding_dim=8, walk_length=32, context_size=8).forward().to(self.device) # TODO: Can you get current device in PyTorch ?
+        embeds = self.conv(batch.x, batch.edge_index).view(batch.batch.max()+1, -1)
+        logits = self.classifier(embeds)
+        return logits 
 
     def training_step(self, batch, batch_idx):
-        x, y = batch 
+        x = batch 
+        y = batch.y
         logits = self.forward(x)
-        loss = F.nll_loss(logits, y)
+        loss = self.loss(logits, y)
         self.log('train_loss', loss)
         return loss 
     
-    def eval(self, batch, mode=None):
-        x, y = batch
+    def eval_batch(self, batch, mode=None):
+        x = batch
+        y = batch.y
         logits = self.forward(x)
-        loss = F.nll_loss(logits, y)
+        loss = self.loss(logits, y)
         acc = (logits.argmax(dim=1) == y).sum().item() / logits.size(0)
         if mode is not None:
             self.log(f'{mode}_loss', loss)
             self.log(f'{mode}_acc', acc)
 
     def validation_step(self, batch, batch_idx):
-        self.eval(batch, 'val')
+        self.eval_batch(batch, 'val')
 
     def test_step(self, batch, batch_idx):
-        self.eval(batch, 'test')
+        self.eval_batch(batch, 'test')
 
     def configure_optimizers(self):
-        optim = torch.optim.SGD(
+        optim = torch.optim.AdamW(
             self.parameters(),
             lr=self.hparams.lr,
-            momentum=0.9,
             weight_decay=self.hparams.weight_decay
         )
-        lr_sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        lr_sched = torch.optim.lr_scheduler.StepLR(
             optim,
-            mode='min',
-            factor=0.1,
-            patience=15,
-            threshold=0.0001,
-            min_lr=1e-8
+            step_size=20,
+            gamma=0.2,
         )
-        return {'optimizer': optim, 'lr_scheduler': lr_sched, 'monitor': 'val_loss'}
+        return [optim], [lr_sched]

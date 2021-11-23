@@ -49,6 +49,13 @@ def visualize(image, graph):
 #mnist_dataset = MNIST('./MNIST', train=True)
 graph_dataset = MNISTSuperpixels(root='./MNISTSuperpixels', train=True)
 
+all_adjacency_list_lens = np.array([data.edge_index.size(1) for data in graph_dataset])
+print(all_adjacency_list_lens.mean(), all_adjacency_list_lens.std())
+all_node_feats = torch.stack([data.x for data in graph_dataset]).squeeze()
+print(all_node_feats.mean(axis=0), all_node_feats.std(axis=0))
+print(all_node_feats.std(axis=0).nonzero())
+print(all_node_feats.mean(axis=0).nonzero())
+exit(0)
 idx = 10240
 #image, label = mnist_dataset[idx]
 graph = graph_dataset[idx]
