@@ -7,3 +7,5 @@ Our models are available [here](https://drive.google.com/file/d/1tvgUPE0TZRSdFCP
 Contributors - 
 1. Saksham Gautam
 2. Ashutosh Sathe
+
+To reproduce our results, run all the `.sh` scripts in this directory
